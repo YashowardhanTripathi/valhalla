@@ -283,6 +283,9 @@ json::MapPtr geojson_shape(const std::vector<PointLL> shape) {
   return geojson;
 }
 
+std::string openlr_shape() {
+}
+
 // Generate full shape of the route.
 std::vector<PointLL>
 full_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs,
@@ -355,6 +358,8 @@ void route_geometry(json::MapPtr& route,
   }
 
   if (options.shape_format() == geojson) {
+    route->emplace("geometry", geojson_shape(shape));
+  } else if (options.shape_format() == openlr) {
     route->emplace("geometry", geojson_shape(shape));
   } else {
     int precision = options.shape_format() == polyline6 ? 1e6 : 1e5;
@@ -1052,6 +1057,8 @@ void maneuver_geometry(json::MapPtr& step,
   }
 
   if (options.shape_format() == geojson) {
+    step->emplace("geometry", geojson_shape(maneuver_shape));
+  } else if (options.shape_format() == openlr) {
     step->emplace("geometry", geojson_shape(maneuver_shape));
   } else {
     int precision = options.shape_format() == polyline6 ? 1e6 : 1e5;

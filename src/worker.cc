@@ -642,6 +642,8 @@ void from_json(rapidjson::Document& doc, Options& options) {
       options.set_shape_format(polyline5);
     } else if (*shape_format == "geojson") {
       options.set_shape_format(geojson);
+    } else if (*shape_format == "openlr") {
+      options.set_shape_format(openlr);
     } else {
       // Throw an error if shape format is invalid
       throw valhalla_exception_t{164};

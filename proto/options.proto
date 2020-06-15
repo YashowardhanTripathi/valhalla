@@ -29,6 +29,7 @@ enum ShapeFormat {
   polyline5 = 0;
   polyline6 = 1;
   geojson = 2;
+  openlr = 3;
 }
 
 enum Costing {
