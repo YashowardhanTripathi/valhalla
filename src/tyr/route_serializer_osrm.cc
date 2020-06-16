@@ -4,8 +4,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "baldr/graphconstants.h"
 #include "baldr/json.h"
 #include "midgard/encoded.h"
+#include "midgard/openlr.h"
 #include "midgard/pointll.h"
 #include "midgard/polyline2.h"
 #include "midgard/util.h"
@@ -17,6 +19,7 @@
 #include "proto/directions.pb.h"
 #include "proto/options.pb.h"
 #include "proto/trip.pb.h"
+#include "proto/tripcommon.pb.h"
 
 using namespace valhalla;
 using namespace valhalla::midgard;
@@ -24,6 +27,10 @@ using namespace valhalla::baldr;
 using namespace valhalla::odin;
 using namespace valhalla::tyr;
 using namespace std;
+
+using OpenLR::LocationReferencePoint;
+using FormOfWay = OpenLR::LocationReferencePoint::FormOfWay;
+using valhalla::TripLeg;
 
 namespace {
 const std::string kSignElementDelimiter = ", ";
@@ -158,95 +165,6 @@ OSRM output is described in: http://project-osrm.org/docs/v5.5.1/api/
 }
 */
 
-/**********OLD OSRM CODE - delete
-    const std::unordered_map<int, std::string> maneuver_type = {
-        { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kNone),             "0"
-},//NoTurn = 0, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kContinue), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kBecomes), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRampStraight), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStayStraight), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kMerge), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kFerryEnter), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kFerryExit), "1"
-},//GoStraight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kSlightRight), "2"
-},//TurnSlightRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRight), "3"
-},//TurnRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRampRight), "3"
-},//TurnRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kExitRight), "3"
-},//TurnRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStayRight), "3"
-},//TurnRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kSharpRight), "4"
-},//TurnSharpRight, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kUturnLeft), "5"
-},//UTurn, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kUturnRight),       "5"
-},//UTurn, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kSharpLeft),        "6"
-},//TurnSharpLeft, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kLeft), "7"
-},//TurnLeft, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRampLeft), "7"
-},//TurnLeft, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kExitLeft), "7"
-},//TurnLeft, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStayLeft), "7"
-},//TurnLeft, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kSlightLeft), "8"
-},//TurnSlightLeft,
-        //{ static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_k),               "9"
-},//ReachViaLocation, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRoundaboutEnter),  "11"
-},//EnterRoundAbout, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kRoundaboutExit),   "12"
-},//LeaveRoundAbout,
-        //{ static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_k),               "13"
-},//StayOnRoundAbout, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStart), "14"
-},//StartAtEndOfStreet, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStartRight),       "14"
-},//StartAtEndOfStreet, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kStartLeft),
-"14" },//StartAtEndOfStreet, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kDestination),      "15"
-},//ReachedYourDestination, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kDestinationRight), "15"
-},//ReachedYourDestination, {
-static_cast<int>(valhalla::DirectionsLeg_Maneuver_Type_kDestinationLeft),  "15"
-},//ReachedYourDestination,
-        //{ static_cast<int>valhalla::DirectionsLeg_Maneuver_Type_k),                "16"
-},//EnterAgainstAllowedDirection,
-        //{ static_cast<int>valhalla::DirectionsLeg_Maneuver_Type_k),                "17"
-},//LeaveAgainstAllowedDirection
-    };
-
-    const std::unordered_map<int, std::string> cardinal_direction_string = {
-      { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kNorth),     "N"
-}, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kNorthEast), "NE" },
-      { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kEast),      "E"
-}, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kSouthEast), "SE" },
-      { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kSouth),     "S"
-}, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kSouthWest), "SW" },
-      { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kWest),      "W"
-}, { static_cast<int>(valhalla::DirectionsLeg_Maneuver_CardinalDirection_kNorthWest), "NW" }
-    };
-
-    json::ArrayPtr route_instructions(const
-google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs){ auto route_instructions =
-json::array({}); for(const auto& leg : legs) { for(const auto& maneuver : leg.maneuver()) {
-          //if we dont know the type of maneuver then skip it
-          auto maneuver_text = maneuver_type.find(static_cast<int>(maneuver.type()));
-          if(maneuver_text == maneuver_type.end())
-            continue;
-
-          //length
-          std::ostringstream length;
-          length << static_cast<uint64_t>(maneuver.length()*1000.f) << "m";
-
-          //json
-          route_instructions->emplace_back(json::array({
-            maneuver_text->second, //maneuver type
-            (maneuver.street_name_size() ? maneuver.street_name(0) : string("")), //street name
-            static_cast<uint64_t>(maneuver.length() * 1000.f), //length in meters
-            static_cast<uint64_t>(maneuver.begin_shape_index()), //index in the shape
-            static_cast<uint64_t>(maneuver.time()), //time in seconds
-            length.str(), //length as a string with a unit suffix
-            cardinal_direction_string.find(static_cast<int>(maneuver.begin_cardinal_direction()))->second,
-// one of: N S E W NW NE SW SE static_cast<uint64_t>(maneuver.begin_heading())
-          }));
-        }
-      }
-      return route_instructions;
-    }
-**/
-
 // Add OSRM route summary information: distance, duration
 void route_summary(json::MapPtr& route,
                    const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs,
@@ -283,18 +201,71 @@ json::MapPtr geojson_shape(const std::vector<PointLL> shape) {
   return geojson;
 }
 
-std::string openlr_shape() {
+// Maps Valhalla edge and road class to an OpenLR form-of-way.
+FormOfWay RoadClassToFOW(const TripLeg::Node& node) {
+  const bool is_missing_rc = !node.has_edge() || !node.edge().has_road_class();
+  if (is_missing_rc || !node.edge().has_use()) {
+    return FormOfWay::OTHER;
+  }
+  const TripLeg::Use use = node.edge().use();
+  const valhalla::RoadClass rc = node.edge().road_class();
+  const bool one_way =
+      node.edge().has_traversability() && node.edge().traversability() != TripLeg::kBoth;
+  if (node.edge().roundabout()) {
+    return FormOfWay::ROUNDABOUT;
+  } else if (use == TripLeg::kRampUse || use == TripLeg::kTurnChannelUse) {
+    return FormOfWay::SLIPROAD;
+  } else if (rc == valhalla::RoadClass::kMotorway && one_way) {
+    return FormOfWay::MOTORWAY;
+  } else if (rc <= valhalla::RoadClass::kTertiary && one_way) {
+    return FormOfWay::MULTIPLE_CARRIAGEWAY;
+  } else if (rc <= valhalla::RoadClass::kTertiary) {
+    return FormOfWay::SINGLE_CARRIAGEWAY;
+  } else {
+    return FormOfWay::OTHER;
+  }
+}
+
+// TODO(mookerji): comment
+std::string openlr_shape(const valhalla::TripRoute& route) {
+  std::vector<OpenLR::LocationReferencePoint> lrps;
+  for (const valhalla::TripLeg& leg : route.legs()) {
+    const std::vector<PointLL>& points = midgard::decode<std::vector<midgard::PointLL>>(leg.shape());
+    // TODO(mookerji): IS THIS RIGHT? Assumes that for each leg, points in the encoded shape are 1-1
+    // with node/edge. This probably isn't right.
+    float bearing = 0;
+    float distance = 0;
+    for (std::size_t i = 0, num_points = points.size(); i < num_points; ++i) {
+      const PointLL& current = points.at(i);
+      const FormOfWay fow = RoadClassToFOW(leg.node(i));
+      const unsigned char frc = static_cast<unsigned char>(fow);
+      if (i == num_points - 1) {
+        bearing += 180;
+        bearing %= 360.; // FIX
+        lrps.emplace_back(current.lng(), current.lat(), bearing, frc, fow,
+                          lrps.empty() ? nullptr : &lrps.back());
+      } else {
+        const PointLL& next = points.at(i + 1);
+        bearing = current.Heading(next);
+        distance = current.Distance(next);
+      }
+      // TODO(continued): should the start node for a new leg point to the lrps of the last node of
+      // the previous leg?
+      lrps.emplace_back(current.lng(), current.lat(), bearing, frc, fow,
+                        lrps.empty() ? nullptr : &lrps.back(), distance);
+    }
+  }
+  // TODO(mookerji): implement lfrcnp
+  return OpenLR::LineLocation{lrps, 0, 0}.toBinary();
 }
 
 // Generate full shape of the route.
-std::vector<PointLL>
-full_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs,
-           const valhalla::Options& options) {
+std::vector<PointLL> full_shape(const valhalla::DirectionsRoute& directions,
+                                const valhalla::Options& options) {
   // If just one leg and it we want polyline6 then we just return the encoded leg shape
-  if (legs.size() == 1 && options.shape_format() == polyline6) {
-    return midgard::decode<std::vector<PointLL>>(legs.begin()->shape());
+  if (directions.legs().size() == 1 && options.shape_format() == polyline6) {
+    return midgard::decode<std::vector<PointLL>>(directions.legs().begin()->shape());
   }
-
   // TODO: there is a tricky way to do this... since the end of each leg is the same as the
   // beginning we essentially could just peel off the first encoded shape point of all the legs (but
   // the first) this way we wouldn't really have to do any decoding (would be far faster). it might
@@ -302,7 +273,7 @@ full_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& le
   // great!) have to have a look should make this a function in midgard probably so the logic is all
   // in the same place
   std::vector<PointLL> decoded;
-  for (const auto& leg : legs) {
+  for (const auto& leg : directions.legs()) {
     auto decoded_leg = midgard::decode<std::vector<PointLL>>(leg.shape());
     decoded.insert(decoded.end(), decoded.size() ? decoded_leg.begin() + 1 : decoded_leg.begin(),
                    decoded_leg.end());
@@ -311,16 +282,13 @@ full_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& le
 }
 
 // Generate simplified shape of the route.
-std::vector<PointLL>
-simplified_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs,
-                 const valhalla::Options& options) {
+std::vector<PointLL> simplified_shape(const valhalla::DirectionsRoute& directions,
+                                      const valhalla::Options& options) {
   Coordinate south_west(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
   Coordinate north_east(std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
-
   std::vector<PointLL> simple_shape;
   std::unordered_set<size_t> indices;
-
-  for (const auto& leg : legs) {
+  for (const auto& leg : directions.legs()) {
     auto decoded_leg = midgard::decode<std::vector<PointLL>>(leg.shape());
     for (const auto& coord : decoded_leg) {
       south_west.lng = std::min(south_west.lng, toFixed(coord.lng()));
@@ -345,22 +313,20 @@ simplified_shape(const google::protobuf::RepeatedPtrField<valhalla::DirectionsLe
 }
 
 void route_geometry(json::MapPtr& route,
-                    const google::protobuf::RepeatedPtrField<valhalla::DirectionsLeg>& legs,
+                    const valhalla::DirectionsRoute& directions,
+                    const valhalla::TripRoute& paths,
                     const valhalla::Options& options) {
-  // full geom = !has_generalize()
-  // simplified geom = has_generalize && generalize == 0
-  // no geom = has_generalize && generalize == -1
   std::vector<PointLL> shape;
   if (options.has_generalize() && options.generalize() == 0.0f) {
-    shape = simplified_shape(legs, options);
+    shape = simplified_shape(directions, options);
   } else if (!options.has_generalize() || (options.has_generalize() && options.generalize() > 0.0f)) {
-    shape = full_shape(legs, options);
+    shape = full_shape(directions, options);
   }
-
+  // OpenLR encoding of geometry requires non-geometric metadata from the TripRoute for encoding.
   if (options.shape_format() == geojson) {
     route->emplace("geometry", geojson_shape(shape));
   } else if (options.shape_format() == openlr) {
-    route->emplace("geometry", geojson_shape(shape));
+    route->emplace("geometry", openlr_shape(paths));
   } else {
     int precision = options.shape_format() == polyline6 ? 1e6 : 1e5;
     route->emplace("geometry", midgard::encode(shape, precision));
@@ -1390,7 +1356,7 @@ std::string serialize(valhalla::Api& api) {
       route->emplace("confidence", json::fp_t{1, 1});
 
     // Concatenated route geometry
-    route_geometry(route, api.directions().routes(i).legs(), options);
+    route_geometry(route, api.directions().routes(i), api.trip().routes(i), options);
 
     // Other route summary information
     route_summary(route, api.directions().routes(i).legs(), imperial);

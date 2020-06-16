@@ -1413,7 +1413,6 @@ TEST(Mapmatch, test_breakage_distance_error_handling) {
   // tests expected error_code for trace_route edge_walk
   auto expected_error_code = 172;
   tyr::actor_t actor(conf, true);
-
   try {
     auto response = json_to_pt(actor.trace_route(
         R"({"costing":"auto","shape_match":"edge_walk","shape":[
@@ -1428,6 +1427,22 @@ TEST(Mapmatch, test_breakage_distance_error_handling) {
   // If we get here then fail the test!
   FAIL() << "Expected trace_route breakage distance exceed exception was not found";
 }
+
+TEST(Mapmatch, openlr) {
+  // clang-format off
+  std::vector<std::tuple<size_t, std::string, std::string>> test_cases = {
+    {200, R"({"costing":"auto","format":"osrm","shape_format":"openlr","shape_match":"map_snap","shape":[{"lon":5.08531221,"lat":52.0938563,"type":"break"},{"lon":5.0865867,"lat":52.0930211,"type":"break"}]})", "foo"}
+  };
+  // clang-format on
+  tyr::actor_t actor(conf, true);
+  for (const auto& test_case : test_cases) {
+    const std::string request = std::get<1>(test_case);
+    const std::string openlr = std::get<2>(test_case);
+    const auto& matched = json_to_pt(actor.trace_route(request));
+    EXPECT_EQ(openlr, "foo");
+  }
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {

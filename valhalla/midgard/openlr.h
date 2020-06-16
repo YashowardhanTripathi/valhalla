@@ -72,7 +72,7 @@ inline float integer2distance(
 } // namespace
 
 // Reference: OpenLR™ White Paper Version: 1.5 revision 2
-// http://www.openlr.org/data/docs/OpenLR-Whitepaper_v1.5.pdf
+// https://www.openlr-association.com/fileadmin/user_upload/openlr-whitepaper_v1.5.pdf
 
 // Location Reference Point, p.35, section 5.4
 struct LocationReferencePoint {
@@ -87,6 +87,17 @@ struct LocationReferencePoint {
     SLIPROAD,
     OTHER
   };
+
+  //   enum RoadClass {
+  //   kMotorway = 0;
+  //   kTrunk = 1;
+  //   kPrimary = 2;
+  //   kSecondary = 3;
+  //   kTertiary = 4;
+  //   kUnclassified = 5;
+  //   kResidential = 6;
+  //   kServiceOther = 7;
+  // }
 
   LocationReferencePoint() = default;
 
