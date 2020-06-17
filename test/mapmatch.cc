@@ -1439,14 +1439,14 @@ TEST(Mapmatch, openlr) {
     const std::string request = std::get<1>(test_case);
     const std::string openlr = std::get<2>(test_case);
     const auto& matched = json_to_pt(actor.trace_route(request));
-    EXPECT_EQ(openlr, "foo");
+    EXPECT_EQ(matched.get<std::string>("geometry"), openlr);
   }
 }
 
 } // namespace
 
 int main(int argc, char* argv[]) {
-  // midgard::logging::Configure({{"type", ""}}); // silence logs
+  midgard::logging::Configure({{"type", ""}});
   if (argc > 1 && std::string(argv[1]).find("gtest") == std::string::npos) {
     if (argc > 1)
       seed = std::stoi(argv[1]);

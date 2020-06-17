@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+
 #include "baldr/graphconstants.h"
 #include "baldr/json.h"
 #include "midgard/encoded.h"
@@ -227,6 +231,14 @@ FormOfWay RoadClassToFOW(const TripLeg::Node& node) {
   }
 }
 
+// TODO(mookerji): Move this shared header file somewhere and remove also from tests/openlr.cc
+std::string encode64(const std::string& val) {
+  using namespace boost::archive::iterators;
+  using It = base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>;
+  auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
+  return tmp.append((3 - val.size() % 3) % 3, '=');
+}
+
 // TODO(mookerji): comment
 std::string openlr_shape(const valhalla::TripRoute& route) {
   std::vector<OpenLR::LocationReferencePoint> lrps;
@@ -256,7 +268,7 @@ std::string openlr_shape(const valhalla::TripRoute& route) {
     }
   }
   // TODO(mookerji): implement lfrcnp
-  return OpenLR::LineLocation{lrps, 0, 0}.toBinary();
+  return encode64(OpenLR::LineLocation{lrps, 0, 0}.toBinary());
 }
 
 // Generate full shape of the route.

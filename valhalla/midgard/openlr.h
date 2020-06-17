@@ -88,17 +88,6 @@ struct LocationReferencePoint {
     OTHER
   };
 
-  //   enum RoadClass {
-  //   kMotorway = 0;
-  //   kTrunk = 1;
-  //   kPrimary = 2;
-  //   kSecondary = 3;
-  //   kTertiary = 4;
-  //   kUnclassified = 5;
-  //   kResidential = 6;
-  //   kServiceOther = 7;
-  // }
-
   LocationReferencePoint() = default;
 
   LocationReferencePoint(double longitude,
