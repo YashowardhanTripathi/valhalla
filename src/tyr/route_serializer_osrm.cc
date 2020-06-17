@@ -1,3 +1,4 @@
+#include <math.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -240,8 +241,7 @@ std::string openlr_shape(const valhalla::TripRoute& route) {
       const FormOfWay fow = RoadClassToFOW(leg.node(i));
       const unsigned char frc = static_cast<unsigned char>(fow);
       if (i == num_points - 1) {
-        bearing += 180;
-        bearing %= 360.; // FIX
+        bearing = fmod(bearing + 180., 360.);
         lrps.emplace_back(current.lng(), current.lat(), bearing, frc, fow,
                           lrps.empty() ? nullptr : &lrps.back());
       } else {
