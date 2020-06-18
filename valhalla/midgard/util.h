@@ -455,7 +455,17 @@ x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type x
  * @param polygon   the list of points comprising the polygon
  * @return the area of the polygon
  */
-template <class container_t> float polygon_area(const container_t& polygon);
+template <class container_t> float polygon_area(const container_t& polygon) {
+  typename container_t::value_type::x_type area =
+      polygon.back() == polygon.front()
+          ? 0.f
+          : (polygon.back().x() + polygon.front().x()) * (polygon.back().y() + polygon.front().y());
+  for (auto p1 = polygon.cbegin(), p2 = std::next(polygon.cbegin()); p2 != polygon.cend();
+       ++p1, ++p2) {
+    area += (p1->x() + p2->x()) * (p1->y() + p2->y());
+  }
+  return area * .5;
+}
 
 template <typename T> struct ring_queue_t {
   ring_queue_t(size_t limit) : limit(limit), i(0) {

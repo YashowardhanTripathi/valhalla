@@ -96,75 +96,6 @@ std::vector<int32_t> Tiles<coord_t>::TileList(const Ellipse<coord_t>& e) const {
   return tile_list;
 }
 
-// Color a "connectivity map" starting with a sparse map of uncolored tiles.
-// Any 2 tiles that have a connected path between them will have the same
-// value in the connectivity map.
-template <class coord_t>
-void Tiles<coord_t>::ColorMap(std::unordered_map<uint32_t, size_t>& connectivity_map,
-                              const std::unordered_map<uint32_t, uint32_t>& not_neighbors) const {
-  // Connectivity map - all connected regions will have a unique Id. If any 2
-  // tile Ids have a different Id they are judged to be not-connected.
-
-  auto are_feuding = [&not_neighbors](uint32_t a, uint32_t b) {
-    auto found = not_neighbors.find(a);
-    if (found != not_neighbors.cend() && found->second == b)
-      return true;
-    found = not_neighbors.find(b);
-    return found != not_neighbors.cend() && found->second == a;
-  };
-
-  // Iterate through tiles
-  size_t color = 1;
-  for (auto& tile : connectivity_map) {
-    // Continue if already visited
-    if (tile.second > 0) {
-      continue;
-    }
-
-    // Mark this tile Id with the current color and find all its
-    // accessible neighbors
-    tile.second = color;
-    std::unordered_set<uint32_t> checklist{tile.first};
-    while (!checklist.empty()) {
-      uint32_t next_tile = *checklist.begin();
-      checklist.erase(checklist.begin());
-
-      // Check neighbors.
-      uint32_t neighbor = LeftNeighbor(next_tile);
-      auto neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
-          !are_feuding(next_tile, neighbor)) {
-        checklist.emplace(neighbor);
-        neighbor_itr->second = color;
-      }
-      neighbor = RightNeighbor(next_tile);
-      neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
-          !are_feuding(next_tile, neighbor)) {
-        checklist.emplace(neighbor);
-        neighbor_itr->second = color;
-      }
-      neighbor = TopNeighbor(next_tile);
-      neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
-          !are_feuding(next_tile, neighbor)) {
-        checklist.emplace(neighbor);
-        neighbor_itr->second = color;
-      }
-      neighbor = BottomNeighbor(next_tile);
-      neighbor_itr = connectivity_map.find(neighbor);
-      if (neighbor_itr != connectivity_map.cend() && neighbor_itr->second == 0 &&
-          !are_feuding(next_tile, neighbor)) {
-        checklist.emplace(neighbor);
-        neighbor_itr->second = color;
-      }
-    }
-
-    // Increment color
-    color++;
-  }
-}
-
 template <class coord_t>
 template <class container_t>
 std::unordered_map<int32_t, std::unordered_set<unsigned short>>
@@ -197,8 +128,8 @@ Tiles<coord_t>::Intersect(const container_t& linestring) const {
   // small interval so as to approximate the arc with piecewise linear segments
   container_t resampled;
   auto max_meters =
-      std::max(1.f, subdivision_size_ * .25f *
-                        DistanceApproximator::MetersPerLngDegree(linestring.front().second));
+      std::max(1., subdivision_size_ * .25f *
+                       DistanceApproximator::MetersPerLngDegree(linestring.front().y()));
   if (coord_t::IsSpherical() && Polyline2<coord_t>::Length(linestring) > max_meters) {
     resampled = resample_spherical_polyline(linestring, max_meters, true);
   }
@@ -219,10 +150,10 @@ Tiles<coord_t>::Intersect(const container_t& linestring) const {
     ui = vi;
 
     // figure out global subdivision start and end points
-    auto x0 = (u.first - tilebounds_.minx()) / tilebounds_.Width() * ncolumns_ * nsubdivisions_;
-    auto y0 = (u.second - tilebounds_.miny()) / tilebounds_.Height() * nrows_ * nsubdivisions_;
-    auto x1 = (v.first - tilebounds_.minx()) / tilebounds_.Width() * ncolumns_ * nsubdivisions_;
-    auto y1 = (v.second - tilebounds_.miny()) / tilebounds_.Height() * nrows_ * nsubdivisions_;
+    auto x0 = (u.x() - tilebounds_.minx()) / tilebounds_.Width() * ncolumns_ * nsubdivisions_;
+    auto y0 = (u.y() - tilebounds_.miny()) / tilebounds_.Height() * nrows_ * nsubdivisions_;
+    auto x1 = (v.x() - tilebounds_.minx()) / tilebounds_.Width() * ncolumns_ * nsubdivisions_;
+    auto y1 = (v.y() - tilebounds_.miny()) / tilebounds_.Height() * nrows_ * nsubdivisions_;
 
     int ix0 = std::floor(x0), ix1 = std::floor(x1);
     int iy0 = std::floor(y0), iy1 = std::floor(y1);
@@ -293,6 +224,7 @@ Tiles<coord_t>::Intersect(const AABB2<coord_t>& box) const {
 /*
 template class Tiles<Point2>;
 template class Tiles<PointLL>;
+*/
 
 template class std::unordered_map<int32_t, std::unordered_set<unsigned short>>
 Tiles<Point2>::Intersect(const std::list<Point2>&) const;
@@ -302,7 +234,6 @@ template class std::unordered_map<int32_t, std::unordered_set<unsigned short>>
 Tiles<Point2>::Intersect(const std::vector<Point2>&) const;
 template class std::unordered_map<int32_t, std::unordered_set<unsigned short>>
 Tiles<PointLL>::Intersect(const std::vector<PointLL>&) const;
-*/
 
 } // namespace midgard
 } // namespace valhalla

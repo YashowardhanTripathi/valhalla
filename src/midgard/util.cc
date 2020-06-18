@@ -483,6 +483,9 @@ y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type y
   auto b = u.y() - (u.y() * m);
   return (y - b) / m;
 }
+template PointLL::y_type
+y_intercept<PointLL>(const PointLL& u, const PointLL& v, const PointLL::y_type x);
+template Point2::y_type y_intercept<Point2>(const Point2& u, const Point2& v, const Point2::y_type x);
 
 // Return the intercept of the line passing through uv with the vertical line defined by x
 template <class coord_t>
@@ -498,23 +501,10 @@ x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type x
   auto b = u.y() - (u.x() * m);
   return x * m + b;
 }
-/*
+
 template PointLL::y_type
 x_intercept<PointLL>(const PointLL& u, const PointLL& v, const PointLL::y_type x);
 template Point2::y_type x_intercept<Point2>(const Point2& u, const Point2& v, const Point2::y_type x);
-*/
-
-template <class container_t> float polygon_area(const container_t& polygon) {
-  typename container_t::value_type::first_type area =
-      polygon.back() == polygon.front() ? 0.f
-                                        : (polygon.back().first + polygon.front().first) *
-                                              (polygon.back().second + polygon.front().second);
-  for (auto p1 = polygon.cbegin(), p2 = std::next(polygon.cbegin()); p2 != polygon.cend();
-       ++p1, ++p2) {
-    area += (p1->first + p2->first) * (p1->second + p2->second);
-  }
-  return area * .5;
-}
 
 /*
 template PointLL::x_type polygon_area(const std::list<PointLL>&);
