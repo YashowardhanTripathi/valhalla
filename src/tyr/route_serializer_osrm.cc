@@ -242,29 +242,28 @@ std::string encode64(const std::string& val) {
 // TODO(mookerji): comment
 std::string openlr_shape(const valhalla::TripRoute& route) {
   std::vector<OpenLR::LocationReferencePoint> lrps;
-  for (const valhalla::TripLeg& leg : route.legs()) {
+  for (const TripLeg& leg : route.legs()) {
     const std::vector<PointLL>& points = midgard::decode<std::vector<midgard::PointLL>>(leg.shape());
-    // TODO(mookerji): IS THIS RIGHT? Assumes that for each leg, points in the encoded shape are 1-1
-    // with node/edge. This probably isn't right.
-    float bearing = 0;
-    float distance = 0;
-    for (std::size_t i = 0, num_points = points.size(); i < num_points; ++i) {
-      const PointLL& current = points.at(i);
-      const FormOfWay fow = RoadClassToFOW(leg.node(i));
+    float bearing_deg = 0;
+    float distance_meters = 0;
+    for (std::size_t i = 0, num_nodes = leg.node_size(); i < num_nodes; ++i) {
+      const TripLeg::Node& current = leg.node(i);
+      const PointLL& location = points.at(current.edge().end_shape_index());
+      const FormOfWay fow = RoadClassToFOW(current);
       const unsigned char frc = static_cast<unsigned char>(fow);
-      if (i == num_points - 1) {
-        bearing = fmod(bearing + 180., 360.);
-        lrps.emplace_back(current.lng(), current.lat(), bearing, frc, fow,
+      if (i == num_nodes - 1) {
+        bearing_deg = fmod(bearing_deg + 180., 360.);
+        lrps.emplace_back(location.lng(), location.lat(), bearing_deg, frc, fow,
                           lrps.empty() ? nullptr : &lrps.back());
       } else {
-        const PointLL& next = points.at(i + 1);
-        bearing = current.Heading(next);
-        distance = current.Distance(next);
+        const PointLL& next_location = points.at(leg.node(i + 1).edge().end_shape_index());
+        bearing_deg = location.Heading(next_location);
+        distance_meters = location.Distance(next_location);
       }
       // TODO(continued): should the start node for a new leg point to the lrps of the last node of
       // the previous leg?
-      lrps.emplace_back(current.lng(), current.lat(), bearing, frc, fow,
-                        lrps.empty() ? nullptr : &lrps.back(), distance);
+      lrps.emplace_back(location.lng(), location.lat(), bearing_deg, frc, fow,
+                        lrps.empty() ? nullptr : &lrps.back(), distance_meters);
     }
   }
   // TODO(mookerji): implement lfrcnp
