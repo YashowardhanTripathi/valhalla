@@ -20,8 +20,8 @@ namespace midgard {
  */
 template <class coord_t> class AABB2 {
 public:
-  using x_t = typename coord_t::first_type;
-  using y_t = typename coord_t::second_type;
+  using x_t = typename coord_t::x_type;
+  using y_t = typename coord_t::y_type;
 
   /**
    * Default constructor. Sets all min,max values to 0.

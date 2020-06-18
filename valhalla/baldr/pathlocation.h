@@ -79,8 +79,8 @@ public:
   bool shares_edges(const PathLocation& other) const;
 
   static void toPBF(const PathLocation& pl, valhalla::Location* l, baldr::GraphReader& reader) {
-    l->mutable_ll()->set_lng(pl.latlng_.first);
-    l->mutable_ll()->set_lat(pl.latlng_.second);
+    l->mutable_ll()->set_lng(pl.latlng_.lng());
+    l->mutable_ll()->set_lat(pl.latlng_.lat());
     l->set_type(valhalla::Location::kBreak);
     if (pl.stoptype_ == Location::StopType::THROUGH)
       l->set_type(valhalla::Location::kThrough);
@@ -141,8 +141,8 @@ public:
       edge->set_percent_along(e.percent_along);
       edge->set_begin_node(e.percent_along == 0.0f);
       edge->set_end_node(e.percent_along == 1.0f);
-      edge->mutable_ll()->set_lng(e.projected.first);
-      edge->mutable_ll()->set_lat(e.projected.second);
+      edge->mutable_ll()->set_lng(e.projected.lng());
+      edge->mutable_ll()->set_lat(e.projected.lat());
       edge->set_side_of_street(e.sos == PathLocation::LEFT
                                    ? valhalla::Location::kLeft
                                    : (e.sos == PathLocation::RIGHT ? valhalla::Location::kRight
@@ -160,8 +160,8 @@ public:
       auto* edge = filtered_edges->Add();
       edge->set_graph_id(e.id);
       edge->set_percent_along(e.percent_along);
-      edge->mutable_ll()->set_lng(e.projected.first);
-      edge->mutable_ll()->set_lat(e.projected.second);
+      edge->mutable_ll()->set_lng(e.projected.lng());
+      edge->mutable_ll()->set_lat(e.projected.lat());
       edge->set_side_of_street(e.sos == PathLocation::LEFT
                                    ? valhalla::Location::kLeft
                                    : (e.sos == PathLocation::RIGHT ? valhalla::Location::kRight

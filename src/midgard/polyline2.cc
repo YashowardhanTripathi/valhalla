@@ -86,64 +86,6 @@ Polyline2<coord_t>::GeneralizedPolyline(const float t, const std::unordered_set<
   return generalized;
 }
 
-template <class coord_t>
-template <class container_t>
-void Polyline2<coord_t>::Generalize(container_t& polyline,
-                                    float epsilon,
-                                    const std::unordered_set<size_t>& indices) {
-  // any epsilon this low will have no effect on the input nor will any super short input
-  if (epsilon <= 0.f || polyline.size() < 3)
-    return;
-
-  // the recursive bit
-  epsilon *= epsilon;
-  std::function<void(typename container_t::iterator, size_t, typename container_t::iterator, size_t)>
-      peucker;
-  peucker = [&peucker, &polyline, epsilon, &indices](typename container_t::iterator start, size_t s,
-                                                     typename container_t::iterator end, size_t e) {
-    // find the point furthest from the line
-    float dmax = std::numeric_limits<float>::lowest();
-    typename container_t::iterator itr;
-    LineSegment2<coord_t> l{*start, *end};
-    size_t j = e - 1, k;
-    coord_t tmp;
-    for (auto i = std::prev(end); i != start; --i, --j) {
-      // special points we dont want to generalize no matter what take precidence
-      if (indices.find(j) != indices.end()) {
-        itr = i;
-        dmax = epsilon;
-        k = j;
-        break;
-      }
-
-      // if this is the highest frequency detail so far
-      auto d = l.DistanceSquared(*i, tmp);
-      if (d > dmax) {
-        itr = i;
-        dmax = d;
-        k = j;
-      }
-    }
-
-    // there are some high frequency details between start and end
-    // so we need to look for flatter sections between them
-    if (dmax >= epsilon) {
-      // we recurse from right to left for two reasons:
-      // 1. we want to preserve iterator validity in the vector version
-      // 2. its the only way to preserve the indices in the keep set
-      if (e - k > 1)
-        peucker(itr, k, end, e);
-      if (k - s > 1)
-        peucker(start, s, itr, k);
-    } // nothing sticks out between start and end so simplify everything between away
-    else
-      polyline.erase(std::next(start), end);
-  };
-
-  // recurse!
-  peucker(polyline.begin(), 0, std::prev(polyline.end()), polyline.size() - 1);
-}
-
 // Clip this polyline to the specified bounding box.
 template <class coord_t> uint32_t Polyline2<coord_t>::Clip(const AABB2<coord_t>& box) {
   return box.Clip(pts_, false);
@@ -171,15 +113,6 @@ template float Polyline2<PointLL>::Length(const std::vector<PointLL>&);
 template float Polyline2<Point2>::Length(const std::vector<Point2>&);
 template float Polyline2<PointLL>::Length(const std::list<PointLL>&);
 template float Polyline2<Point2>::Length(const std::list<Point2>&);
-
-template void
-Polyline2<PointLL>::Generalize(std::vector<PointLL>&, float, const std::unordered_set<size_t>&);
-template void
-Polyline2<Point2>::Generalize(std::vector<Point2>&, float, const std::unordered_set<size_t>&);
-template void
-Polyline2<PointLL>::Generalize(std::list<PointLL>&, float, const std::unordered_set<size_t>&);
-template void
-Polyline2<Point2>::Generalize(std::list<Point2>&, float, const std::unordered_set<size_t>&);
 
 } // namespace midgard
 } // namespace valhalla

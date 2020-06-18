@@ -81,7 +81,7 @@ json::ArrayPtr serialize_nodes(const PathLocation& location, GraphReader& reader
     } else {
       midgard::PointLL node_ll = tile->get_node_ll(n);
       node = json::map({
-          {"lon", json::fp_t{node_ll.first, 6}}, {"lat", json::fp_t{node_ll.second, 6}},
+          {"lon", json::fp_t{node_ll.lng(), 6}}, {"lat", json::fp_t{node_ll.lat(), 6}},
           // TODO: osm_id
       });
     }

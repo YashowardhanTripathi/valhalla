@@ -91,7 +91,7 @@ template <class coord_t> bool AABB2<coord_t>::Intersects(const coord_t& c, float
   // Trivial rejection - if the center is more than radius away from
   // from any box edge (in the direction perpendicular to the edge
   // and away from the box center) it cannot intersect
-  if (c.first < minx_ - r || c.second < miny_ - r || c.first > maxx_ + r || c.second > maxy_ + r) {
+  if (c.x() < minx_ - r || c.y() < miny_ - r || c.x() > maxx_ + r || c.y() > maxy_ + r) {
     return false;
   }
 
@@ -99,8 +99,8 @@ template <class coord_t> bool AABB2<coord_t>::Intersects(const coord_t& c, float
   // of the center then we intersected. We just project the center
   // onto each edge and check the distance
   r *= r;
-  y_t horizontal = clamp(c.second, miny_, maxy_);
-  x_t vertical = clamp(c.first, minx_, maxx_);
+  y_t horizontal = clamp(c.y(), miny_, maxy_);
+  x_t vertical = clamp(c.x(), minx_, maxx_);
   return c.DistanceSquared(coord_t{minx_, horizontal}) <= r || // intersects the left side
          c.DistanceSquared(coord_t{maxx_, horizontal}) <= r || // intersects the right side
          c.DistanceSquared(coord_t{vertical, miny_}) <= r ||   // intersects the bottom side
@@ -110,8 +110,8 @@ template <class coord_t> bool AABB2<coord_t>::Intersects(const coord_t& c, float
 // Intersects the segment formed by u,v with the bounding box
 template <class coord_t> bool AABB2<coord_t>::Intersect(coord_t& u, coord_t& v) const {
   // which do we need to move
-  bool need_u = u.first < minx_ || u.first > maxx_ || u.second < miny_ || u.second > maxy_;
-  bool need_v = v.first < minx_ || v.first > maxx_ || v.second < miny_ || v.second > maxy_;
+  bool need_u = u.x() < minx_ || u.x() > maxx_ || u.y() < miny_ || u.y() > maxy_;
+  bool need_v = v.x() < minx_ || v.x() > maxx_ || v.y() < miny_ || v.y() > maxy_;
   if (!(need_u || need_v)) {
     return true;
   }
@@ -121,19 +121,19 @@ template <class coord_t> bool AABB2<coord_t>::Intersect(coord_t& u, coord_t& v) 
   y_t y;
   // intersect with each edge keeping it if its on this box and on the segment uv
   if (!std::isnan(x = y_intercept(u, v, miny_)) && x >= minx_ && x <= maxx_ &&
-      between(x, u.first, v.first)) {
+      between(x, u.x(), v.x())) {
     intersections.emplace_back(x, miny_);
   }
   if (!std::isnan(x = y_intercept(u, v, maxy_)) && x >= minx_ && x <= maxx_ &&
-      between(x, u.first, v.first)) {
+      between(x, u.x(), v.x())) {
     intersections.emplace_back(x, maxy_);
   }
   if (!std::isnan(y = x_intercept(u, v, maxx_)) && y >= miny_ && y <= maxy_ &&
-      between(y, u.second, v.second)) {
+      between(y, u.y(), v.y())) {
     intersections.emplace_back(maxx_, y);
   }
   if (!std::isnan(y = x_intercept(u, v, minx_)) && y >= miny_ && y <= maxy_ &&
-      between(y, u.second, v.second)) {
+      between(y, u.y(), v.y())) {
     intersections.emplace_back(minx_, y);
   }
   // pick the best one for each that needs it

@@ -189,8 +189,8 @@ const int16_t* sample::source(uint16_t index) const {
 
 template <class coord_t> double sample::get(const coord_t& coord) const {
   // check the cache and load
-  auto lon = std::floor(coord.first);
-  auto lat = std::floor(coord.second);
+  auto lon = std::floor(coord.lng());
+  auto lat = std::floor(coord.lat());
   auto index = static_cast<uint16_t>(lat + 90) * 360 + static_cast<uint16_t>(lon + 180);
 
   // get the proper source of the data
@@ -203,8 +203,8 @@ template <class coord_t> double sample::get(const coord_t& coord) const {
   // NOTE: data is arranged from upper left to bottom right, so y is flipped
 
   // fractional pixel
-  double u = (coord.first - lon) * (HGT_DIM - 1);
-  double v = (1.0 - (coord.second - lat)) * (HGT_DIM - 1);
+  double u = (coord.lng() - lon) * (HGT_DIM - 1);
+  double v = (1.0 - (coord.lat() - lat)) * (HGT_DIM - 1);
 
   // integer pixel
   size_t x = std::floor(u);
@@ -274,10 +274,13 @@ double sample::get_no_data_value() {
 }
 
 // explicit instantiations for templated get
-template double sample::get<std::pair<double, double>>(const std::pair<double, double>&) const;
-template double sample::get<std::pair<float, float>>(const std::pair<float, float>&) const;
+// template double sample::get<std::pair<double, double>>(const std::pair<double, double>&) const;
+// template double sample::get<std::pair<float, float>>(const std::pair<float, float>&) const;
 template double sample::get<midgard::PointLL>(const midgard::PointLL&) const;
+/*
 template double sample::get<midgard::Point2>(const midgard::Point2&) const;
+*/
+/*
 template std::vector<double> sample::get_all<std::list<std::pair<double, double>>>(
     const std::list<std::pair<double, double>>&) const;
 template std::vector<double> sample::get_all<std::vector<std::pair<double, double>>>(
@@ -286,14 +289,17 @@ template std::vector<double>
 sample::get_all<std::list<std::pair<float, float>>>(const std::list<std::pair<float, float>>&) const;
 template std::vector<double> sample::get_all<std::vector<std::pair<float, float>>>(
     const std::vector<std::pair<float, float>>&) const;
+*/
 template std::vector<double>
 sample::get_all<std::list<midgard::PointLL>>(const std::list<midgard::PointLL>&) const;
 template std::vector<double>
 sample::get_all<std::vector<midgard::PointLL>>(const std::vector<midgard::PointLL>&) const;
+/*
 template std::vector<double>
 sample::get_all<std::list<midgard::Point2>>(const std::list<midgard::Point2>&) const;
 template std::vector<double>
 sample::get_all<std::vector<midgard::Point2>>(const std::vector<midgard::Point2>&) const;
+*/
 
 } // namespace skadi
 } // namespace valhalla

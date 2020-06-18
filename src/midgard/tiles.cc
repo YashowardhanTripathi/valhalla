@@ -17,20 +17,20 @@ namespace {
 // at each step it decides to either move in the x or y direction based on which pixels midpoint
 // forms a smaller triangle with the line. to avoid edge cases we allow set_pixel to make the
 // the loop bail if we leave the valid drawing region
-void bresenham_line(float x0,
-                    float y0,
-                    float x1,
-                    float y1,
+void bresenham_line(double x0,
+                    double y0,
+                    double x1,
+                    double y1,
                     const std::function<bool(int32_t, int32_t)>& set_pixel) {
   // this one for sure
   bool outside = set_pixel(std::floor(x0), std::floor(y0));
   // steps in the proper direction and constants for shoelace formula
-  float sx = x0 < x1 ? 1 : -1, dx = x1 - x0, x = std::floor(x0) + .5f;
-  float sy = y0 < y1 ? 1 : -1, dy = y1 - y0, y = std::floor(y0) + .5f;
+  double sx = x0 < x1 ? 1 : -1, dx = x1 - x0, x = std::floor(x0) + .5f;
+  double sy = y0 < y1 ? 1 : -1, dy = y1 - y0, y = std::floor(y0) + .5f;
   // keep going until we make it to the ending pixel
   while (std::floor(x) != std::floor(x1) || std::floor(y) != std::floor(y1)) {
-    float tx = std::abs(dx * (y - y0) - dy * ((x + sx) - x0));
-    float ty = std::abs(dx * ((y + sy) - y0) - dy * (x - x0));
+    double tx = std::abs(dx * (y - y0) - dy * ((x + sx) - x0));
+    double ty = std::abs(dx * ((y + sy) - y0) - dy * (x - x0));
     // less error moving in the x
     if (tx < ty) {
       x += sx;
@@ -49,186 +49,11 @@ void bresenham_line(float x0,
 }
 
 // a functor to generate closest first subdivisions of a set of tiles
-template <class coord_t> struct closest_first_generator_t {
-  coord_t seed;
-  valhalla::midgard::Tiles<coord_t> tiles;
-  int32_t subcols, subrows;
-  std::unordered_set<int32_t> queued;
-  using best_t = std::pair<float, int32_t>;
-  std::set<best_t, std::function<bool(const best_t&, const best_t&)>> queue;
-
-  closest_first_generator_t(const valhalla::midgard::Tiles<coord_t>& tiles, const coord_t& seed)
-      : tiles(tiles), seed(seed), queued(100), queue([](const best_t& a, const best_t& b) {
-          return a.first == b.first ? a.second < b.second : a.first < b.first;
-        }) {
-    // what global subdivision are we starting in
-    // TODO: worry about wrapping around valid range
-    subcols = tiles.ncolumns() * tiles.nsubdivisions();
-    subrows = tiles.nrows() * tiles.nsubdivisions();
-    auto x = (seed.first - tiles.TileBounds().minx()) / tiles.TileBounds().Width() * subcols;
-    auto y = (seed.second - tiles.TileBounds().miny()) / tiles.TileBounds().Height() * subrows;
-    auto subdivision = static_cast<int32_t>(y) * subcols + static_cast<int32_t>(x);
-    queued.emplace(subdivision);
-    queue.emplace(std::make_pair(0, subdivision));
-    neighbors(subdivision);
-  }
-
-  // something to measure the closest possible point of a subdivision from the given seed point
-  float dist(int32_t sub) {
-    auto x = sub % subcols;
-    auto x0 = tiles.TileBounds().minx() + x * tiles.SubdivisionSize();
-    auto x1 = tiles.TileBounds().minx() + (x + 1) * tiles.SubdivisionSize();
-    auto y = sub / subcols;
-    auto y0 = tiles.TileBounds().miny() + y * tiles.SubdivisionSize();
-    auto y1 = tiles.TileBounds().miny() + (y + 1) * tiles.SubdivisionSize();
-    auto distance = std::numeric_limits<float>::max();
-    std::list<coord_t> corners{{x0, y0}, {x1, y0}, {x0, y1}, {x1, y1}};
-    if (x0 < seed.first && x1 > seed.first) {
-      corners.emplace_back(seed.first, y0);
-      corners.emplace_back(seed.first, y1);
-    }
-    if (y0 < seed.second && y1 > seed.second) {
-      corners.emplace_back(x0, seed.second);
-      corners.emplace_back(x1, seed.second);
-    }
-    for (const auto& c : corners) {
-      auto d = seed.Distance(c);
-      if (d < distance) {
-        distance = d;
-      }
-    }
-    return distance;
-  }
-
-  // something to add the neighbors of a given subdivision
-  const std::list<std::pair<int, int>> neighbor_offsets{{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
-  void neighbors(int32_t s) {
-    // walk over all adjacent subdivisions in row major order
-    auto x = s % subcols;
-    auto y = s / subcols;
-    for (const auto& off : neighbor_offsets) {
-      // skip y out of bounds
-      auto ny = y + off.second;
-      if (ny == -1 || ny == subrows) {
-        continue;
-      }
-      // fix x
-      auto nx = x + off.first;
-      if (nx == -1 || nx == subcols) {
-        if (!coord_t::IsSpherical()) {
-          continue;
-        }
-        nx = (nx + subcols) % subcols;
-      }
-      // actually add the thing
-      auto neighbor = ny * subcols + nx;
-      if (queued.find(neighbor) == queued.cend()) {
-        queued.emplace(neighbor);
-        queue.emplace(std::make_pair(dist(neighbor), neighbor));
-      }
-    }
-  }
-
-  // get the next closest subdivision
-  std::tuple<int32_t, unsigned short, float> next() {
-    // get the next closest one or bail
-    if (!queue.size()) {
-      throw std::runtime_error("Subdivisions were exhausted");
-    }
-    auto best = *queue.cbegin();
-    queue.erase(queue.cbegin());
-    // add its neighbors
-    neighbors(best.second);
-    // return it
-    auto sx = best.second % subcols;
-    auto sy = best.second / subcols;
-    auto tile_column = sx / tiles.nsubdivisions();
-    auto tile_row = sy / tiles.nsubdivisions();
-    auto tile = tile_row * tiles.ncolumns() + tile_column;
-    unsigned short subdivision = (sy - tile_row * tiles.nsubdivisions()) * tiles.nsubdivisions() +
-                                 (sx - tile_column * tiles.nsubdivisions());
-    return std::make_tuple(tile, subdivision, best.first);
-  }
-};
 
 } // namespace
 
 namespace valhalla {
 namespace midgard {
-
-// Constructor.  A bounding box and tile size is specified.
-// Sets class data members and computes the number of rows and columns
-// based on the bounding box and tile size.
-template <class coord_t>
-Tiles<coord_t>::Tiles(const AABB2<coord_t>& bounds,
-                      const float tilesize,
-                      unsigned short subdivisions,
-                      bool wrapx)
-    : tilebounds_(bounds), tilesize_(tilesize), nsubdivisions_(subdivisions),
-      subdivision_size_(tilesize_ / nsubdivisions_), wrapx_(wrapx) {
-  auto columns = bounds.Width() / tilesize_;
-  auto rows = bounds.Height() / tilesize_;
-  // TODO: delete this constructor and force use of the lower one
-  // this is not safe because tilesize may not evenly divide into the bounds dimensions
-  ncolumns_ = static_cast<int32_t>(std::round(columns));
-  nrows_ = static_cast<int32_t>(std::round(rows));
-}
-
-// this constructor forces you to specify your tileset in such a way that it conforms to
-// an integer number of columns and rows as well as a tile_size which is evenly divisible into the
-// bounds dimensions
-template <class coord_t>
-Tiles<coord_t>::Tiles(const coord_t& min_pt,
-                      const float tile_size,
-                      const int32_t columns,
-                      const int32_t rows,
-                      const unsigned short subdivisions,
-                      bool wrapx)
-    : tilebounds_(min_pt,
-                  coord_t{min_pt.first + columns * tile_size, min_pt.second + rows * tile_size}),
-      tilesize_(tile_size), ncolumns_(columns), nrows_(rows),
-      subdivision_size_(tilesize_ / nsubdivisions_), nsubdivisions_(subdivisions), wrapx_(wrapx) {
-}
-
-// Get the list of tiles that lie within the specified bounding box. Since tiles as well as the
-// bounding box are both aligned to the axes we can simply find tiles by iterating over rows
-// and columns of tiles from the minimum to maximum.
-template <class coord_t> std::vector<int> Tiles<coord_t>::TileList(const AABB2<coord_t>& bbox) const {
-  // Check if x range needs to be split
-  std::vector<AABB2<coord_t>> bboxes;
-  if (wrapx_) {
-    if (bbox.minx() < tilebounds_.minx() && bbox.maxx() > tilebounds_.minx()) {
-      // Create 2 bounding boxes
-      bboxes.emplace_back(tilebounds_.minx(), bbox.miny(), bbox.maxx(), bbox.maxy());
-      bboxes.emplace_back(bbox.minx() + tilebounds_.Width(), bbox.miny(), tilebounds_.maxx(),
-                          bbox.maxy());
-    } else if (bbox.minx() < tilebounds_.maxx() && bbox.maxx() > tilebounds_.maxx()) {
-      // Create 2 bounding boxes
-      bboxes.emplace_back(bbox.minx(), bbox.miny(), tilebounds_.maxx(), bbox.maxy());
-      bboxes.emplace_back(tilebounds_.minx(), bbox.miny(), bbox.maxx() - tilebounds_.Width(),
-                          bbox.maxy());
-    } else {
-      bboxes.push_back(bbox.Intersection(tilebounds_));
-    }
-  } else {
-    bboxes.push_back(bbox.Intersection(tilebounds_));
-  }
-
-  std::vector<int32_t> tilelist;
-  for (const auto& bb : bboxes) {
-    int32_t minrow = std::max(Row(bb.miny()), 0);
-    int32_t maxrow = std::max(Row(bb.maxy()), 0);
-    int32_t mincol = std::max(Col(bb.minx()), 0);
-    int32_t maxcol = std::max(Col(bb.maxx()), 0);
-    for (int32_t row = minrow; row <= maxrow; ++row) {
-      int32_t tileid = TileId(mincol, row);
-      for (int32_t col = mincol; col <= maxcol; ++col, ++tileid) {
-        tilelist.push_back(tileid);
-      }
-    }
-  }
-  return tilelist;
-}
 
 // Get the list of tiles that lie within the specified bounding box. The method finds the tile
 // at the ellipse center. It successively finds neighbors and checks if they are inside or intersect
@@ -464,14 +289,8 @@ Tiles<coord_t>::Intersect(const AABB2<coord_t>& box) const {
   return intersection;
 }
 
-template <class coord_t>
-std::function<std::tuple<int32_t, unsigned short, float>()>
-Tiles<coord_t>::ClosestFirst(const coord_t& seed) const {
-  return std::bind(&closest_first_generator_t<coord_t>::next,
-                   closest_first_generator_t<coord_t>(*this, seed));
-}
-
 // Explicit instantiation
+/*
 template class Tiles<Point2>;
 template class Tiles<PointLL>;
 
@@ -483,6 +302,7 @@ template class std::unordered_map<int32_t, std::unordered_set<unsigned short>>
 Tiles<Point2>::Intersect(const std::vector<Point2>&) const;
 template class std::unordered_map<int32_t, std::unordered_set<unsigned short>>
 Tiles<PointLL>::Intersect(const std::vector<PointLL>&) const;
+*/
 
 } // namespace midgard
 } // namespace valhalla

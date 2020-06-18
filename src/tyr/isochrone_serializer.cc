@@ -56,7 +56,7 @@ serializeIsochrones(const Api& request,
         // make some geometry
         auto coords = array({});
         for (const auto& coord : contour) {
-          coords->push_back(array({fp_t{coord.first, 6}, fp_t{coord.second, 6}}));
+          coords->push_back(array({fp_t{coord.x(), 6}, fp_t{coord.y(), 6}}));
         }
         // its either a ring
         if (polygons) {

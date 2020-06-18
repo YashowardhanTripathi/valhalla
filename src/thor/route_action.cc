@@ -160,8 +160,8 @@ std::string thor_worker_t::expansion(Api& request) {
     for (const auto& p : shape) {
       linestring.GetArray().PushBack(rapidjson::Value(rapidjson::kArrayType), a);
       auto point = linestring[linestring.Size() - 1].GetArray();
-      point.PushBack(p.first, a);
-      point.PushBack(p.second, a);
+      point.PushBack(p.lng(), a);
+      point.PushBack(p.lat(), a);
     }
 
     // make the properties

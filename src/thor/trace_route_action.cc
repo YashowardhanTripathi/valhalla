@@ -48,8 +48,8 @@ void add_path_edge(valhalla::Location* l,
   auto* edge = l->mutable_path_edges()->Add();
   edge->set_graph_id(edge_id);
   edge->set_percent_along(percent_along);
-  edge->mutable_ll()->set_lng(ll.first);
-  edge->mutable_ll()->set_lat(ll.second);
+  edge->mutable_ll()->set_lng(ll.lng());
+  edge->mutable_ll()->set_lat(ll.lat());
   edge->set_distance(distance);
   // NOTE: we dont need side of street here because the match is continuous we dont know if they were
   // starting a route from the side of the road or whatever so calling that out is not a good idea

@@ -17,6 +17,7 @@
 #include <valhalla/midgard/distanceapproximator.h>
 #include <valhalla/midgard/pointll.h>
 #include <valhalla/midgard/tiles.h>
+#include <valhalla/midgard/util_core.h>
 
 namespace valhalla {
 namespace midgard {
@@ -108,11 +109,6 @@ inline AABB2<PointLL> ExpandMeters(const PointLL& pt, const float meters) {
   PointLL minpt(pt.lng() - dlng, pt.lat() - dlat);
   PointLL maxpt(pt.lng() + dlng, pt.lat() + dlat);
   return {minpt, maxpt};
-}
-
-// Convenience method.
-template <class T> T sqr(const T a) {
-  return a * a;
 }
 
 /**
@@ -304,33 +300,6 @@ template <class T1, class T2> inline T2 ToSet(const T1& inset) {
 }
 
 /**
- * equals with an epsilon for approximation
- * @param a first operand
- * @param b second operand
- * @param epsilon to help with approximate equality
- */
-template <class T> bool equal(const T a, const T b, const T epsilon = static_cast<T>(.00001)) {
-  if (epsilon < static_cast<T>(0)) {
-    throw std::logic_error("Using a negative epsilon is not supported");
-  }
-  T diff = a - b;
-  // if its non-negative it better be less than epsilon, if its negative then it better be bigger
-  // than epsilon
-  bool negative = diff < static_cast<T>(0);
-  return (!negative && diff <= epsilon) || (negative && diff >= -epsilon);
-}
-
-template <class T> bool similar(const T a, const T b, const double similarity = .99) {
-  if (a == 0 || b == 0) {
-    return a == b;
-  }
-  if ((a < 0) != (b < 0)) {
-    return false;
-  }
-  return (double)std::min(a, b) / (double)std::max(a, b) >= similarity;
-}
-
-/**
  * A means by which you can get some information about the current processes memory footprint
  */
 struct memory_status {
@@ -370,13 +339,6 @@ template <class T> T circular_range_clamp(T value, T lower, T upper) {
   auto d = value - upper;
   d -= (static_cast<int>(d / i) * i);
   return lower + d;
-}
-
-/**
- * standard clamp
- */
-template <class T> T clamp(T value, T lower, T upper) {
-  return std::max(std::min(value, upper), lower);
 }
 
 /**
@@ -469,8 +431,8 @@ bool intersect(const coord_t& u, const coord_t& v, const coord_t& a, const coord
  * @return x component (or NaN if parallel) of the intercept of uv with the horizontal line
  */
 template <class coord_t>
-typename coord_t::first_type
-y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::second_type y = 0);
+typename coord_t::x_type
+y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type y = 0);
 /**
  * Return the intercept of the line passing through uv with the vertical line defined by x
  * @param u  first point on line
@@ -479,8 +441,8 @@ y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::second_t
  * @return y component (or NaN if parallel) of the intercept of uv with the vertical line
  */
 template <class coord_t>
-typename coord_t::first_type
-x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::second_type x = 0);
+typename coord_t::x_type
+x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type x = 0);
 
 /**
  * Compute the area of a polygon. If your polygon is not twisted or self intersecting
@@ -607,8 +569,8 @@ struct projector_t {
 
     // project a onto b where b is the origin vector representing this segment
     // and a is the origin vector to the point we are projecting, (a.b/b.b)*b
-    auto bx = double(v.first) - u.first;
-    auto by = double(v.second) - u.second;
+    auto bx = double(v.lng()) - u.lng();
+    auto by = double(v.lat()) - u.lat();
 
     // Scale longitude when finding the projection
     auto bx2 = bx * lon_scale;
@@ -625,7 +587,7 @@ struct projector_t {
     }
     // projects along the ray between u and v
     scale /= sq;
-    return {u.first + bx * scale, u.second + by * scale};
+    return {static_cast<float>(u.lng() + bx * scale), static_cast<float>(u.lat() + by * scale)};
   }
 
   // critical data

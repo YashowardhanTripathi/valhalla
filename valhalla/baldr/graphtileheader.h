@@ -163,7 +163,7 @@ public:
    * @return Returns the base lat,lon of the tile (degrees).
    */
   const midgard::PointLL& base_ll() const {
-    return static_cast<const midgard::PointLL&>(base_ll_);
+    return base_ll_;
   }
 
   /**
@@ -171,8 +171,7 @@ public:
    * @param ll  Base lat,lon of the tile.
    */
   void set_base_ll(const midgard::PointLL& ll) {
-    base_ll_.first = ll.lng();
-    base_ll_.second = ll.lat();
+    base_ll_ = ll;
   }
 
   /**
@@ -593,7 +592,7 @@ protected:
   uint64_t has_ext_directededge_ : 1; // Does this tile have extended directed edge data
 
   // Base lon, lat of the tile
-  std::pair<float, float> base_ll_;
+  midgard::PointLL base_ll_;
 
   // baldr version.
   char version_[kMaxVersionSize];

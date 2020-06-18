@@ -248,21 +248,22 @@ resample_spherical_polyline(const container_t& polyline, double resolution, bool
   PointLL last = resampled.back();
   for (auto p = std::next(polyline.cbegin()); p != polyline.cend(); ++p) {
     // radians
-    auto lon2 = p->first * -RAD_PER_DEG;
-    auto lat2 = p->second * RAD_PER_DEG;
+    auto lon2 = p->x() * -RAD_PER_DEG;
+    auto lat2 = p->y() * RAD_PER_DEG;
     // how much do we have left on this segment from where we are (in great arc radians)
     // double d = 2.0 * asin(sqrt(pow(sin((resampled.back().second * RAD_PER_DEG - lat2) /
     // 2.0), 2.0) + cos(resampled.back().second * RAD_PER_DEG) * cos(lat2)
     // *pow(sin((resampled.back().first * -RAD_PER_DEG - lon2) / 2.0), 2.0)));
-    auto d = (last == *p) ? 0.0
-                          : acos(sin(last.second * RAD_PER_DEG) * sin(lat2) +
-                                 cos(last.second * RAD_PER_DEG) * cos(lat2) *
-                                     cos(last.first * -RAD_PER_DEG - lon2));
+    auto d =
+        (last == *p)
+            ? 0.0
+            : acos(sin(last.y() * RAD_PER_DEG) * sin(lat2) +
+                   cos(last.y() * RAD_PER_DEG) * cos(lat2) * cos(last.x() * -RAD_PER_DEG - lon2));
     // keep placing points while we can fit them
     while (d > remaining) {
       // some precomputed stuff
-      auto lon1 = last.first * -RAD_PER_DEG;
-      auto lat1 = last.second * RAD_PER_DEG;
+      auto lon1 = last.x() * -RAD_PER_DEG;
+      auto lat1 = last.y() * RAD_PER_DEG;
       auto sd = sin(d);
       auto a = sin(d - remaining) / sd;
       auto acs1 = a * cos(lat1);
@@ -272,8 +273,8 @@ resample_spherical_polyline(const container_t& polyline, double resolution, bool
       auto x = acs1 * cos(lon1) + bcs2 * cos(lon2);
       auto y = acs1 * sin(lon1) + bcs2 * sin(lon2);
       auto z = a * sin(lat1) + b * sin(lat2);
-      last.first = atan2(y, x) * -DEG_PER_RAD;
-      last.second = atan2(z, sqrt(x * x + y * y)) * DEG_PER_RAD;
+      last.set_x(atan2(y, x) * -DEG_PER_RAD);
+      last.set_y(atan2(z, sqrt(x * x + y * y)) * DEG_PER_RAD);
       resampled.push_back(last);
       // we just consumed a bit
       d -= remaining;
@@ -332,18 +333,19 @@ std::vector<PointLL> uniform_resample_spherical_polyline(const std::vector<Point
   PointLL last = resampled.back();
   for (auto p = std::next(polyline.cbegin()); p != polyline.cend(); ++p) {
     // Distance between this vertex and last (in great arc radians)
-    auto lon2 = p->first * -RAD_PER_DEG;
-    auto lat2 = p->second * RAD_PER_DEG;
-    auto d = (last == *p) ? 0.0
-                          : acos(sin(last.second * RAD_PER_DEG) * sin(lat2) +
-                                 cos(last.second * RAD_PER_DEG) * cos(lat2) *
-                                     cos(last.first * -RAD_PER_DEG - lon2));
+    auto lon2 = p->x() * -RAD_PER_DEG;
+    auto lat2 = p->y() * RAD_PER_DEG;
+    auto d =
+        (last == *p)
+            ? 0.0
+            : acos(sin(last.y() * RAD_PER_DEG) * sin(lat2) +
+                   cos(last.y() * RAD_PER_DEG) * cos(lat2) * cos(last.x() * -RAD_PER_DEG - lon2));
 
     // Place resampled points on this segment as long as remaining distance is < d
     while (remaining < d) {
       // some precomputed stuff
-      auto lon1 = last.first * -RAD_PER_DEG;
-      auto lat1 = last.second * RAD_PER_DEG;
+      auto lon1 = last.x() * -RAD_PER_DEG;
+      auto lat1 = last.y() * RAD_PER_DEG;
       auto sd = sin(d);
       auto a = sin(d - remaining) / sd;
       auto acs1 = a * cos(lat1);
@@ -354,8 +356,8 @@ std::vector<PointLL> uniform_resample_spherical_polyline(const std::vector<Point
       auto x = acs1 * cos(lon1) + bcs2 * cos(lon2);
       auto y = acs1 * sin(lon1) + bcs2 * sin(lon2);
       auto z = a * sin(lat1) + b * sin(lat2);
-      last.first = atan2(y, x) * -DEG_PER_RAD;
-      last.second = atan2(z, sqrt(x * x + y * y)) * DEG_PER_RAD;
+      last.set_x(atan2(y, x) * -DEG_PER_RAD);
+      last.set_y(atan2(z, sqrt(x * x + y * y)) * DEG_PER_RAD);
       resampled.push_back(last);
 
       // Update to reduce d and update...
@@ -412,18 +414,18 @@ resample_polyline(const std::vector<PointLL>& polyline, const float length, cons
     // Interpolate between the prior polyline point if we exceed the resolution
     // (including distance accumulated so far)
     if (d + accumulated_d > sample_distance) {
-      float dlon = p1->first - p0->first;
-      float dlat = p1->second - p0->second;
+      float dlon = p1->lng() - p0->lng();
+      float dlat = p1->lat() - p0->lat();
 
       // Form the first interpolated point
       float p = (sample_distance - accumulated_d) / d;
-      resampled.emplace_back(p0->first + p * dlon, p0->second + p * dlat);
+      resampled.emplace_back(p0->lng() + p * dlon, p0->lat() + p * dlat);
 
       // Continue to interpolate along the segment while accumulated distance is less than resolution
       float dp = sample_distance / d;
       while (p + dp < 1.0f && resampled.size() < n) {
         p += dp;
-        resampled.emplace_back(p0->first + p * dlon, p0->second + p * dlat);
+        resampled.emplace_back(p0->lng() + p * dlon, p0->lat() + p * dlat);
       }
 
       // Set the accumulated distance to the distance remaining on this segment
@@ -444,19 +446,19 @@ resample_polyline(const std::vector<PointLL>& polyline, const float length, cons
 // Return the intersection of two infinite lines if any
 template <class coord_t>
 bool intersect(const coord_t& u, const coord_t& v, const coord_t& a, const coord_t& b, coord_t& i) {
-  auto uv_xd = u.first - v.first;
-  auto uv_yd = u.second - v.second;
-  auto ab_xd = a.first - b.first;
-  auto ab_yd = a.second - b.second;
+  auto uv_xd = u.x() - v.x();
+  auto uv_yd = u.y() - v.y();
+  auto ab_xd = a.x() - b.x();
+  auto ab_yd = a.y() - b.y();
   auto d_cross = uv_xd * ab_yd - ab_xd * uv_yd;
   // parallel or very close to it
   if (std::abs(d_cross) < 1e-5) {
     return false;
   }
-  auto uv_cross = u.first * v.second - u.second * v.first;
-  auto ab_cross = a.first * b.second - a.second * b.first;
-  i.first = (uv_cross * ab_xd - uv_xd * ab_cross) / d_cross;
-  i.second = (uv_cross * ab_yd - uv_yd * ab_cross) / d_cross;
+  auto uv_cross = u.x() * v.y() - u.y() * v.x();
+  auto ab_cross = a.x() * b.y() - a.y() * b.x();
+  i.set_x((uv_cross * ab_xd - uv_xd * ab_cross) / d_cross);
+  i.set_y((uv_cross * ab_yd - uv_yd * ab_cross) / d_cross);
   return true;
 }
 template bool intersect<PointLL>(const PointLL& u,
@@ -469,41 +471,38 @@ intersect<Point2>(const Point2& u, const Point2& v, const Point2& a, const Point
 
 // Return the intercept of the line passing through uv with the horizontal line defined by y
 template <class coord_t>
-typename coord_t::first_type
-y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::second_type y) {
-  if (std::abs(u.first - v.first) < 1e-5) {
-    return u.first;
+typename coord_t::x_type
+y_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type y) {
+  if (std::abs(u.x() - v.x()) < 1e-5) {
+    return u.x();
   }
-  if (std::abs(u.second - u.second) < 1e-5) {
+  if (std::abs(u.y() - u.y()) < 1e-5) {
     return NAN;
   }
-  auto m = (v.second - u.second) / (v.first - u.first);
-  auto b = u.second - (u.first * m);
+  auto m = (v.y() - u.y()) / (v.x() - u.x());
+  auto b = u.y() - (u.y() * m);
   return (y - b) / m;
 }
-template PointLL::first_type
-y_intercept<PointLL>(const PointLL& u, const PointLL& v, const PointLL::first_type y);
-template Point2::first_type
-y_intercept<Point2>(const Point2& u, const Point2& v, const Point2::first_type y);
 
 // Return the intercept of the line passing through uv with the vertical line defined by x
 template <class coord_t>
-typename coord_t::first_type
-x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::second_type x) {
-  if (std::abs(u.second - v.second) < 1e-5) {
-    return u.second;
+typename coord_t::x_type
+x_intercept(const coord_t& u, const coord_t& v, const typename coord_t::y_type x) {
+  if (std::abs(u.y() - v.y()) < 1e-5) {
+    return u.y();
   }
-  if (std::abs(u.first - v.first) < 1e-5) {
+  if (std::abs(u.x() - v.x()) < 1e-5) {
     return NAN;
   }
-  auto m = (v.second - u.second) / (v.first - u.first);
-  auto b = u.second - (u.first * m);
+  auto m = (v.y() - u.y()) / (v.x() - u.x());
+  auto b = u.y() - (u.x() * m);
   return x * m + b;
 }
-template PointLL::second_type
-x_intercept<PointLL>(const PointLL& u, const PointLL& v, const PointLL::second_type x);
-template Point2::second_type
-x_intercept<Point2>(const Point2& u, const Point2& v, const Point2::second_type x);
+/*
+template PointLL::y_type
+x_intercept<PointLL>(const PointLL& u, const PointLL& v, const PointLL::y_type x);
+template Point2::y_type x_intercept<Point2>(const Point2& u, const Point2& v, const Point2::y_type x);
+*/
 
 template <class container_t> float polygon_area(const container_t& polygon) {
   typename container_t::value_type::first_type area =
@@ -517,10 +516,12 @@ template <class container_t> float polygon_area(const container_t& polygon) {
   return area * .5;
 }
 
-template PointLL::first_type polygon_area(const std::list<PointLL>&);
+/*
+template PointLL::x_type polygon_area(const std::list<PointLL>&);
 template PointLL::first_type polygon_area(const std::vector<PointLL>&);
 template Point2::first_type polygon_area(const std::list<Point2>&);
 template Point2::first_type polygon_area(const std::vector<Point2>&);
+*/
 
 std::vector<midgard::PointLL> simulate_gps(const std::vector<gps_segment_t>& segments,
                                            std::vector<float>& accuracies,
@@ -570,9 +571,9 @@ std::vector<midgard::PointLL> simulate_gps(const std::vector<gps_segment_t>& seg
       // meters of noise with extremely low likelihood its larger than accuracy
       auto noise = get_noise();
       // use the number of meters per degree in both axis to offset the point by the noise
-      auto metersPerDegreeLon = DistanceApproximator::MetersPerLngDegree(p.second);
-      simulated.emplace_back(midgard::PointLL(p.first + noise.first / metersPerDegreeLon,
-                                              p.second + noise.second / kMetersPerDegreeLat));
+      auto metersPerDegreeLon = DistanceApproximator::MetersPerLngDegree(p.lng());
+      simulated.emplace_back(midgard::PointLL(p.lng() + noise.first / metersPerDegreeLon,
+                                              p.lat() + noise.second / kMetersPerDegreeLat));
       // keep the distance to use for accuracy
       accuracies.emplace_back(simulated.back().Distance(p));
     }

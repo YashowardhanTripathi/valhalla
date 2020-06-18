@@ -5,7 +5,6 @@
 #include <math.h>
 
 #include <valhalla/midgard/constants.h>
-#include <valhalla/midgard/pointll.h>
 
 namespace valhalla {
 namespace midgard {
@@ -38,7 +37,8 @@ public:
    * precalculates the meters per degree of longitude.
    * @param   ll    Latitude, longitude of the test point (degrees)
    */
-  DistanceApproximator(const PointLL& ll)
+  template <typename LatLngT>
+  DistanceApproximator(const LatLngT& ll)
       : centerlat_(ll.lat()), centerlng_(ll.lng()), m_lng_scale_(LngScalePerLat(centerlat_)),
         m_per_lng_degree_(m_lng_scale_ * kMetersPerDegreeLat) {
   }
@@ -49,7 +49,7 @@ public:
    * precalculates the meters per degree of longitude.
    * @param   ll    Latitude, longitude of the test point (degrees)
    */
-  void SetTestPoint(const PointLL& ll) {
+  template <typename LatLngT> void SetTestPoint(const LatLngT& ll) {
     centerlat_ = ll.lat();
     centerlng_ = ll.lng();
     m_lng_scale_ = LngScalePerLat(centerlat_);
@@ -74,7 +74,7 @@ public:
    *          theorem.  Squared distance is returned for more efficient
    *          searching (avoids sqrt).
    */
-  float DistanceSquared(const PointLL& ll) const {
+  template <typename LatLngT> double DistanceSquared(const LatLngT& ll) const {
     return sqr((ll.lat() - centerlat_) * kMetersPerDegreeLat) +
            sqr((ll.lng() - centerlng_) * m_per_lng_degree_);
   }
@@ -87,7 +87,7 @@ public:
    * @param   ll2  Second point (lat,lng)
    * @return  Returns the approximate distance squared (in meters)
    */
-  static float DistanceSquared(const PointLL& ll1, const PointLL& ll2) {
+  template <typename LatLngT> static double DistanceSquared(const LatLngT& ll1, const LatLngT& ll2) {
     float latm = (ll1.lat() - ll2.lat()) * kMetersPerDegreeLat;
     float lngm = (ll1.lng() - ll2.lng()) * MetersPerLngDegree((ll1.lat() + ll2.lat()) * 0.5f);
     return (latm * latm + lngm * lngm);
@@ -101,7 +101,7 @@ public:
    * @param   lat   Latitude in degrees
    * @return  Returns the number of meters per degree of longitude
    */
-  static float MetersPerLngDegree(const float lat) {
+  static double MetersPerLngDegree(const double lat) {
     return LngScalePerLat(lat) * kMetersPerDegreeLat;
   }
 
@@ -111,17 +111,17 @@ public:
    * @param   lat   Latitude in degrees
    * @return  Returns the scale to use for longitude at this degree of latitude
    */
-  static float LngScalePerLat(const float lat) {
+  static double LngScalePerLat(const double lat) {
     return cosf(lat * kRadPerDeg);
   }
 
 private:
-  float centerlat_;
-  float centerlng_;
-  float m_lng_scale_;
-  float m_per_lng_degree_;
+  double centerlat_;
+  double centerlng_;
+  double m_lng_scale_;
+  double m_per_lng_degree_;
 
-  float sqr(const float v) const {
+  double sqr(const double v) const {
     return v * v;
   }
 };

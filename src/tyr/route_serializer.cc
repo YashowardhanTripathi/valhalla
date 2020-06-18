@@ -43,7 +43,7 @@ std::string pathToGPX(const google::protobuf::RepeatedPtrField<TripLeg>& legs) {
     // throw the shape points in as way points
     // TODO: add time to each, need transition time at nodes
     for (const auto& wpt : wpts) {
-      gpx << R"(<wpt lon=")" << wpt.first << R"(" lat=")" << wpt.second << R"("></wpt>)";
+      gpx << R"(<wpt lon=")" << wpt.lng() << R"(" lat=")" << wpt.lat() << R"("></wpt>)";
     }
 
     // throw the intersections in as route points
@@ -60,7 +60,7 @@ std::string pathToGPX(const google::protobuf::RepeatedPtrField<TripLeg>& legs) {
 
       // output this intersection (note that begin and end points may not be intersections)
       const auto& rtept = wpts[shape_idx];
-      gpx << R"(<rtept lon=")" << rtept.first << R"(" lat=")" << rtept.second << R"(">)"
+      gpx << R"(<rtept lon=")" << rtept.lng() << R"(" lat=")" << rtept.lat() << R"(">)"
           << "<name>" << last_id << "</name></rtept>";
     }
     gpx << "</rte>";

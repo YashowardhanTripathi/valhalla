@@ -50,7 +50,7 @@ public:
    * @param  traffic_signal Has a traffic signal at this node?
    */
   NodeInfo(const midgard::PointLL& tile_corner,
-           const std::pair<float, float>& ll,
+           const midgard::PointLL& ll,
            const baldr::RoadClass rc,
            const uint32_t access,
            const baldr::NodeType type,
@@ -71,7 +71,7 @@ public:
    * @param  tile_corner Lower left (SW) corner of the tile.
    * @param  ll  Lat,lng position of the node.
    */
-  void set_latlng(const midgard::PointLL& tile_corner, const std::pair<float, float>& ll);
+  void set_latlng(const midgard::PointLL& tile_corner, const midgard::PointLL& ll);
 
   /**
    * Get the index of the first outbound edge from this node. Since

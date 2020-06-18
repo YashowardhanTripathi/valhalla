@@ -38,8 +38,8 @@ GriddedData<coord_t>::GenerateContours(const std::vector<float>& contour_interva
 
   // Values at tile corners and center (0 element is center)
   int sh[5];
-  typename coord_t::first_type s[5]; // Values at the tile corners and center
-  coord_t tile_corners[5];           // coord_t at tile corners and center
+  typename coord_t::x_type s[5]; // Values at the tile corners and center
+  coord_t tile_corners[5];       // coord_t at tile corners and center
 
   // Find the intersection along a tile edge
   auto intersect = [&tile_corners, &s](int p1, int p2) {
@@ -282,7 +282,7 @@ GriddedData<coord_t>::GenerateContours(const std::vector<float>& contour_interva
       contour.remove_if([](const contour_t& line) { return line.front() != line.back(); });
     }
     // sort them by area (maybe length would be sufficient?) biggest first
-    std::unordered_map<const contour_t*, typename coord_t::first_type> cache(contour.size());
+    std::unordered_map<const contour_t*, typename coord_t::x_type> cache(contour.size());
     std::for_each(contour.cbegin(), contour.cend(),
                   [&cache](const contour_t& c) { cache[&c] = polygon_area(c); });
     contour.sort([&cache](const contour_t& a, const contour_t& b) {
@@ -306,8 +306,8 @@ GriddedData<coord_t>::GenerateContours(const std::vector<float>& contour_interva
       }
       // sampling the bottom left corner means everything is skewed, so unskew it
       for (auto& coord : line) {
-        coord.first += h;
-        coord.second += h;
+        coord.set_x(coord.x() + h);
+        coord.set_y(coord.y() + h);
       }
     }
     // if they just wanted linestrings we need only one per feature

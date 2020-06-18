@@ -72,7 +72,7 @@ NodeInfo::NodeInfo() {
 }
 
 NodeInfo::NodeInfo(const PointLL& tile_corner,
-                   const std::pair<float, float>& ll,
+                   const PointLL& ll,
                    const RoadClass rc,
                    const uint32_t access,
                    const NodeType type,
@@ -85,14 +85,14 @@ NodeInfo::NodeInfo(const PointLL& tile_corner,
 }
 
 // Sets the latitude and longitude.
-void NodeInfo::set_latlng(const PointLL& tile_corner, const std::pair<float, float>& ll) {
+void NodeInfo::set_latlng(const PointLL& tile_corner, const PointLL& ll) {
   // Protect against a node being slightly outside the tile (due to float roundoff)
-  lat_offset_ = ll.second < tile_corner.lat()
+  lat_offset_ = ll.lat() < tile_corner.lat()
                     ? 0
-                    : static_cast<uint32_t>((ll.second - tile_corner.lat()) / kDegreesPrecision);
-  lon_offset_ = ll.first < tile_corner.lng()
+                    : static_cast<uint32_t>((ll.lat() - tile_corner.lat()) / kDegreesPrecision);
+  lon_offset_ = ll.lng() < tile_corner.lng()
                     ? 0
-                    : static_cast<uint32_t>((ll.first - tile_corner.lng()) / kDegreesPrecision);
+                    : static_cast<uint32_t>((ll.lng() - tile_corner.lng()) / kDegreesPrecision);
 }
 
 // Set the index in the node's tile of its first outbound edge.
@@ -246,8 +246,8 @@ void NodeInfo::set_connecting_wayid(const uint64_t wayid) {
 
 json::MapPtr NodeInfo::json(const GraphTile* tile) const {
   auto m = json::map({
-      {"lon", json::fp_t{latlng(tile->header()->base_ll()).first, 6}},
-      {"lat", json::fp_t{latlng(tile->header()->base_ll()).second, 6}},
+      {"lon", json::fp_t{latlng(tile->header()->base_ll()).lng(), 6}},
+      {"lat", json::fp_t{latlng(tile->header()->base_ll()).lat(), 6}},
       {"edge_count", static_cast<uint64_t>(edge_count_)},
       {"access", access_json(access_)},
       {"intersection_type", to_string(static_cast<IntersectionType>(intersection_))},

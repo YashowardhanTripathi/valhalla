@@ -173,11 +173,11 @@ directed_reach Reach::exact(const valhalla::baldr::DirectedEdge* edge,
   const baldr::GraphTile* tile = nullptr;
   const auto* node = reader.GetEndNode(edge, tile);
   auto ll = node->latlng(tile->header()->base_ll());
-  locations_.Mutable(0)->mutable_ll()->set_lng(ll.first);
-  locations_.Mutable(0)->mutable_ll()->set_lat(ll.second);
+  locations_.Mutable(0)->mutable_ll()->set_lng(ll.lng());
+  locations_.Mutable(0)->mutable_ll()->set_lat(ll.lat());
   locations_.Mutable(0)->mutable_path_edges(0)->set_graph_id(edge_id);
-  locations_.Mutable(0)->mutable_path_edges(0)->mutable_ll()->set_lng(ll.first);
-  locations_.Mutable(0)->mutable_path_edges(0)->mutable_ll()->set_lat(ll.second);
+  locations_.Mutable(0)->mutable_path_edges(0)->mutable_ll()->set_lng(ll.lng());
+  locations_.Mutable(0)->mutable_path_edges(0)->mutable_ll()->set_lat(ll.lat());
 
   // fake up the costing array
   std::shared_ptr<sif::DynamicCost> costings[static_cast<int>(sif::TravelMode::kMaxTravelMode)];
