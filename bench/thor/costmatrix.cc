@@ -79,8 +79,8 @@ static void BM_UtrechtCostMatrix(benchmark::State& state) {
   const double max_lat = 52.1411;
 
   std::mt19937 gen(0); // Seed with the same value for consistent benchmarking
-  std::uniform_real_distribution<> lng_distribution(min_lon, max_lon);
-  std::uniform_real_distribution<> lat_distribution(min_lat, max_lat);
+  std::uniform_real_distribution<float> lng_distribution(min_lon, max_lon);
+  std::uniform_real_distribution<float> lat_distribution(min_lat, max_lat);
 
   locations.reserve(size);
   for (int i = 0; i < size; i++) {

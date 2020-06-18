@@ -277,6 +277,7 @@ double sample::get_no_data_value() {
 // template double sample::get<std::pair<double, double>>(const std::pair<double, double>&) const;
 // template double sample::get<std::pair<float, float>>(const std::pair<float, float>&) const;
 template double sample::get<midgard::PointLL>(const midgard::PointLL&) const;
+template double sample::get<midgard::GeoPoint<double>>(const midgard::GeoPoint<double>&) const;
 /*
 template double sample::get<midgard::Point2>(const midgard::Point2&) const;
 */
@@ -294,6 +295,8 @@ template std::vector<double>
 sample::get_all<std::list<midgard::PointLL>>(const std::list<midgard::PointLL>&) const;
 template std::vector<double>
 sample::get_all<std::vector<midgard::PointLL>>(const std::vector<midgard::PointLL>&) const;
+template std::vector<double> sample::get_all<std::list<midgard::GeoPoint<double>>>(
+    const std::list<midgard::GeoPoint<double>>&) const;
 /*
 template std::vector<double>
 sample::get_all<std::list<midgard::Point2>>(const std::list<midgard::Point2>&) const;

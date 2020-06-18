@@ -7,10 +7,11 @@
 #include <vector>
 
 #include "midgard/logging.h"
+#include "midgard/pointll.h"
 #include "skadi/sample.h"
 
 void get_samples(const valhalla::skadi::sample& sample,
-                 const std::list<std::pair<double, double>>& postings,
+                 const std::list<valhalla::midgard::GeoPoint<double>>& postings,
                  size_t id) {
   LOG_INFO("Thread" + std::to_string(id) + " sampling " + std::to_string(postings.size()) +
            " postings");
@@ -43,20 +44,19 @@ int main(int argc, char** argv) {
   valhalla::skadi::sample sample(argv[1]);
 
   LOG_INFO("Loading coordinate postings");
-  std::vector<std::list<std::pair<double, double>>> postings(thread_count);
+  std::vector<std::list<valhalla::midgard::GeoPoint<double>>> postings(thread_count);
   auto posting = postings.end() - 1;
   size_t posting_count = 0;
   std::ifstream file(argv[2]);
-  do {
+  double x, y;
+  while (file >> x >> y) {
     ++posting;
     if (posting == postings.end()) {
       posting = postings.begin();
     }
-    posting->emplace_back();
+    posting->emplace_back(x, y);
     ++posting_count;
-  } while (file >> posting->back().first >> posting->back().second);
-  posting->pop_back();
-  --posting_count;
+  }
 
   // run the threads
   auto start = std::chrono::system_clock::now();

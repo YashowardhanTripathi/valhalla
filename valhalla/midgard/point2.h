@@ -181,6 +181,10 @@ public:
     return !(*this == other);
   }
 
+  bool operator<(const PointXY<PrecisionT>& other) const {
+    return x() < other.x() ? true : x() > other.x() ? false : y() < other.y();
+  }
+
   /**
    * Finds the closest point to the supplied polyline as well as the distance
    * to that point and the index of the segment where the closest point lies.
